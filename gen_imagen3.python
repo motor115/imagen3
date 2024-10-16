@@ -1,0 +1,63 @@
+import vertexai
+from vertexai.preview.vision_models import Image, ImageGenerationModel
+from datetime import datetime
+
+def generate_image(
+    project_id: str,
+    location: str,
+    output_files: list,
+    prompt: str,
+    negative_prompt: str,
+):
+    # Vertex AIを初期化
+    vertexai.init(project=project_id, location=location)
+
+    # 学習済みの画像生成モデルをロード
+    model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
+
+    # 画像をインペインティング挿入モードで編集
+    images = model.generate_images(
+        prompt=prompt,
+        seed=10,
+        number_of_images=4,
+        aspect_ratio='3:4',  # 「1:1」、「9:16」、「16:9」、「3:4」、「4:3」
+        # guidance_scale='',
+        language= 'ja',
+        output_gcs_uri='gs://xxxxx',
+        # output_mime_type='', # image/png , image/jpeg
+        add_watermark=False,
+        safety_filter_level='block_some',
+        person_generation='allow_adult',
+    )
+
+    # 現在の日時を取得し、フォーマット
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+
+    # 出力画像を保存
+    # それぞれの画像を異なるファイルに保存
+    for i, img in enumerate(images):
+        # ファイル名にタイムスタンプを追加
+        # output_file = f"output/gen_image_{timestamp}_{i + 1}.png"
+        output_file = f"output/gen_image_{i + 1}.png"
+
+        img.save(output_file, include_generation_parameters=True)
+        print(f"Created output image {i + 1} as {output_file} using {len(img._image_bytes)} bytes")
+
+    return images
+    
+# 引数を直接指定して関数を呼び出す
+project_id = "xxxxx"
+location = "xxxx"
+negative_prompt = "",
+prompt = (
+    "Japanese female, 20s, bare feet, general view, "
+    "upright, hands down, white background, "
+)
+
+generate_image(
+    project_id=project_id,
+    location=location,
+    output_files=[],  # 複数のファイル名をリストで指定する必要がなくなった
+    prompt=prompt,
+    negative_prompt=negative_prompt,
+)
